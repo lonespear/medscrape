@@ -303,7 +303,7 @@ elif source_option == "Scrape from PubMed":
             text="Press enter to add more",
             key='included2'
         )
-    else:
+    elif example_query == "No":
         included_1 = st_tags(
             value=[],
             label="#### Include words or phrases:",
