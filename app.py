@@ -404,7 +404,6 @@ if cluster_btn:
             dimred_method=dimred_method, cluster_method=cluster_method
         )
         # Generate the interactive plot using Plotly
-        fig = plot_dimred_interactive(st.session_state.df, dimred_method, cluster_method, centroids)
         st.write("### Updated Search Results with Clusters", st.session_state.df)
         csv_clustered = st.session_state.df.to_csv(index=False)
         st.download_button(
@@ -413,6 +412,7 @@ if cluster_btn:
             file_name='pubmed_clustered_results.csv',
             mime='text/csv'
         )
+        st.divider()
         # Use two columns to display cluster sizes and keywords
         c20, c21 = st.columns(2)
         with c20:
@@ -420,5 +420,7 @@ if cluster_btn:
         with c21:
             st.write(pd.DataFrame.from_dict(cluster_keywords, orient='index', 
                       columns=[f'Term {i+1}' for i in range(n_keywords)]))
+        st.divider()
         # Display the interactive Plotly chart
+        fig = plot_dimred_interactive(st.session_state.df, dimred_method, cluster_method, centroids)
         st.plotly_chart(fig, use_container_width=True)
