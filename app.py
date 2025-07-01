@@ -305,11 +305,13 @@ elif source_option == "Scrape from PubMed":
         )
     else:
         included_1 = st_tags(
+            value=[],
             label="#### Include words or phrases:",
             text="Press enter to add more",
             key='included1'
         )
         included_2 = st_tags(
+            value=[],
             label="#### Include words or phrases:",
             text="Press enter to add more",
             key='included2'
