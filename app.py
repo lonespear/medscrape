@@ -125,10 +125,13 @@ def run_cluster(df, n_clusters, n_key_words, dimred_method, cluster_method):
     """
     Perform dimensionality reduction and clustering on the DataFrame.
     Returns:
-        cluster_sizes: Series with counts for each cluster.
-        cluster_keywords: Dict with top keywords per cluster.
+        cluster_sizes: Series with counts for each cluster (sorted by size descending).
+        cluster_keywords: Dict with unique top keywords per cluster.
+        cluster_keyword_scores: Dict with scores associated with keywords.
         centroids: Array of centroids if using K-Means; else None.
     """
+    from collections import defaultdict
+
     # Define dimensionality reduction methods
     dim_reduction_methods = {
         "PCA": PCA(n_components=2),
@@ -142,13 +145,14 @@ def run_cluster(df, n_clusters, n_key_words, dimred_method, cluster_method):
         "Hierarchical": AgglomerativeClustering(n_clusters=n_clusters),
         "LDA": LatentDirichletAllocation(n_components=n_clusters, random_state=42)
     }
-    
-    # Create a corpus by concatenating Title and Abstract
+
+    # Create text corpus
     text_data = df['Title'].fillna('') + ' ' + df['Abstract'].fillna('')
     
-    # TF-IDF vectorization
-    vectorizer = TfidfVectorizer(max_features=20, stop_words='english')
+    # TF-IDF
+    vectorizer = TfidfVectorizer(max_features=500, stop_words='english')
     tfidf_matrix = vectorizer.fit_transform(text_data)
+    terms = vectorizer.get_feature_names_out()
     
     # Dimensionality reduction
     dim_reducer = dim_reduction_methods.get(dimred_method)
@@ -163,35 +167,63 @@ def run_cluster(df, n_clusters, n_key_words, dimred_method, cluster_method):
         centroids = None
     else:
         cluster_labels = cluster_model.fit_predict(tfidf_matrix)
-        if cluster_method == "K-Means":
-            centroids = cluster_model.cluster_centers_
-        else:
-            centroids = None
-    df['Cluster'] = cluster_labels
-    cluster_sizes = df['Cluster'].value_counts()
+        centroids = cluster_model.cluster_centers_ if cluster_method == "K-Means" else None
 
-    # Extract top keywords for each cluster
+    df['Cluster'] = cluster_labels
+    cluster_sizes = df['Cluster'].value_counts().sort_values(ascending=False)  # Sort by size
+
+    # Initialize output dicts
     cluster_keywords = {}
-    terms = vectorizer.get_feature_names_out()
-    if cluster_method == "K-Means":
-        order_centroids = cluster_model.cluster_centers_.argsort()[:, ::-1]
-        for i in range(n_clusters):
-            cluster_keywords[i] = [terms[ind] for ind in order_centroids[i, :n_key_words]]
-    elif cluster_method == "LDA":
-        for i, topic in enumerate(cluster_model.components_):
-            cluster_keywords[i] = [terms[ind] for ind in topic.argsort()[:-n_key_words - 1:-1]]
-    else:  # For Hierarchical and DBSCAN
-        for cluster in range(n_clusters):
-            cluster_indices = df[df['Cluster'] == cluster].index
-            if len(cluster_indices) > 0:
-                cluster_tfidf = tfidf_matrix[cluster_indices].mean(axis=0)
-                # For sparse matrix, convert to array and then sort:
-                top_indices = np.array(cluster_tfidf).argsort()[0, -n_key_words:][::-1]
-                cluster_keywords[cluster] = [terms[ind] for ind in top_indices]
-            else:
+    cluster_keyword_scores = {}
+    used_keywords = set()
+
+    # Iterate over clusters by size
+    for cluster in cluster_sizes.index:
+        keywords = []
+        scores = []
+
+        if cluster_method == "K-Means":
+            centroid_weights = cluster_model.cluster_centers_[cluster]
+            keyword_score_pairs = sorted(
+                [(terms[i], centroid_weights[i]) for i in range(len(terms))],
+                key=lambda x: x[1],
+                reverse=True
+            )
+
+        elif cluster_method == "LDA":
+            topic_weights = cluster_model.components_[cluster]
+            keyword_score_pairs = sorted(
+                [(terms[i], topic_weights[i]) for i in range(len(terms))],
+                key=lambda x: x[1],
+                reverse=True
+            )
+
+        else:  # Hierarchical / DBSCAN — use mean TF-IDF scores
+            cluster_indices = df[df["Cluster"] == cluster].index
+            if len(cluster_indices) == 0:
                 cluster_keywords[cluster] = []
-    
-    return cluster_sizes, cluster_keywords, centroids
+                cluster_keyword_scores[cluster] = []
+                continue
+            cluster_tfidf = tfidf_matrix[cluster_indices].mean(axis=0)
+            keyword_score_pairs = sorted(
+                [(terms[i], cluster_tfidf[0, i]) for i in range(len(terms))],
+                key=lambda x: x[1],
+                reverse=True
+            )
+
+        # Assign top n_key_words that are not already used
+        for kw, score in keyword_score_pairs:
+            if kw not in used_keywords:
+                keywords.append(kw)
+                scores.append(score)
+                used_keywords.add(kw)
+            if len(keywords) == n_key_words:
+                break
+
+        cluster_keywords[cluster] = keywords
+        cluster_keyword_scores[cluster] = scores
+
+    return cluster_sizes, cluster_keywords, cluster_keyword_scores, centroids
 
 def plot_dimred_interactive(df, dimred_method, cluster_method, centroids=None):
     """
@@ -417,7 +449,7 @@ if cluster_btn:
     if st.session_state.df is None or st.session_state.df.empty:
         st.error("No data to cluster!")
     else:
-        cluster_sizes, cluster_keywords, centroids = run_cluster(
+        cluster_sizes, cluster_keywords, cluster_keyword_scores, centroids = run_cluster(
             st.session_state.df, n_clusters=num_clusters, n_key_words=n_keywords,
             dimred_method=dimred_method, cluster_method=cluster_method
         )
@@ -459,7 +491,6 @@ if cluster_btn:
         fig.update_layout(width=1000, height=700)
 
 st.divider()
-
 st.subheader("Summarization")
 
 num_sentences = st.slider("Sentences per summary", 1, 5, 3)
@@ -467,7 +498,16 @@ sum_bool = st.button("Summarize Clusters", type='primary')
 
 if sum_bool:
     clust_sum = []
-    for cluster in num_clusters:
-        df_copy = st.sessions_state.df
-        cluster_text = " ".join(df_copy[df_copy["Cluster"] == 0]["Abstract"].dropna())
-        clust_sum[0] = summarize_textrank_sumy(cluster_text, num_sentences=num_sentences)
+    df_copy = st.session_state.df
+
+    # Loop over all unique clusters
+    for cluster in sorted(df_copy["Cluster"].unique()):
+        cluster_text = " ".join(df_copy[df_copy["Cluster"] == cluster]["Abstract"].dropna())
+        summary = summarize_textrank_sumy(cluster_text, num_sentences=num_sentences)
+        clust_sum.append((cluster, summary))
+
+    # Display summaries with optional top keywords
+    for cluster, summary in clust_sum:
+        top_keywords = ", ".join(cluster_keywords[cluster])
+        with st.expander(f"Cluster {cluster} Summary  🔹 Top Keywords: {top_keywords}"):
+            st.write(summary)
