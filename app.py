@@ -413,13 +413,22 @@ if cluster_btn:
             mime='text/csv'
         )
         st.divider()
-        # Use two columns to display cluster sizes and keywords
-        c20, c21 = st.columns(2)
-        with c20:
-            st.write("Cluster Sizes:", cluster_sizes)
-        with c21:
-            st.write(pd.DataFrame.from_dict(cluster_keywords, orient='index', 
-                      columns=[f'Term {i+1}' for i in range(n_keywords)]))
+        # Merge cluster sizes and keywords into one DataFrame
+        cluster_df = pd.DataFrame.from_dict(cluster_keywords, orient='index',
+                                            columns=[f"Term {i+1}" for i in range(n_keywords)])
+        cluster_df.index.name = "Cluster"
+        cluster_df = cluster_df.reset_index()
+
+        # Add count column from cluster sizes
+        cluster_df["Count"] = cluster_df["Cluster"].map(cluster_sizes)
+
+        # Reorder columns to show Cluster, Count, then Terms
+        cols = ["Cluster", "Count"] + [f"Term {i+1}" for i in range(n_keywords)]
+        cluster_df = cluster_df[cols]
+
+        # Display the merged table
+        st.write("### Cluster Summary")
+        st.dataframe(cluster_df, use_container_width=True)
         st.divider()
         # Display the interactive Plotly chart
         fig = plot_dimred_interactive(st.session_state.df, dimred_method, cluster_method, centroids)
