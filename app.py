@@ -191,34 +191,41 @@ def run_cluster(df, n_clusters, n_key_words, dimred_method, cluster_method):
 
 def plot_dimred_interactive(df, dimred_method, cluster_method, centroids=None):
     """
-    Create an interactive Plotly scatter plot of the dimensionality-reduced data with clusters.
-    Hovering over a point shows the abstract (along with Title and JournalName).
-    If centroids are provided (K-Means), plot them as well.
+    Create an interactive Plotly scatter plot with dimensionality-reduced data and clusters.
     """
-    # Create the interactive scatter plot using Plotly Express
+    df["Cluster"] = df["Cluster"].astype(str)  # Treat clusters as categories
+
     fig = px.scatter(
         df,
         x="Dim_1",
         y="Dim_2",
         color="Cluster",
-        hover_data={"Abstract": True, "Title": True, "JournalName": True},
-        title=f"{dimred_method} + {cluster_method}",
-        labels={"Dim_1": "Dimension 1", "Dim_2": "Dimension 2"}
+        hover_data={
+            "Citation": True,
+            "Dim_1": False,
+            "Dim_2": False,
+            "Cluster": False
+        },
+        title=f"{dimred_method} + {cluster_method} Clustering Visualization",
+        labels={"Dim_1": "Dimension 1", "Dim_2": "Dimension 2"},
+        color_discrete_sequence=px.colors.qualitative.Set1,
+        height=700
     )
     
-    # Add centroids for K-Means
     if centroids is not None:
         fig.add_trace(
             go.Scatter(
                 x=centroids[:, 0],
                 y=centroids[:, 1],
-                mode="markers",
+                mode="markers+text",
                 marker=dict(symbol="x", size=12, color="red"),
+                text=[f"C{i}" for i in range(len(centroids))],
+                textposition="top center",
                 name="Centroids",
                 hoverinfo="skip"
             )
         )
-    # Enable zoom and interactive hover
+
     fig.update_layout(hovermode="closest")
     return fig
 
@@ -431,5 +438,11 @@ if cluster_btn:
         st.dataframe(cluster_df, use_container_width=True)
         st.divider()
         # Display the interactive Plotly chart
+        st.session_state.df["Citation"] = (
+            st.session_state.df["Authors"].fillna("") + " (" +
+            st.session_state.df["PublicationYear"].fillna("N/A") + "). " +
+            st.session_state.df["Title"].fillna("")
+        )
         fig = plot_dimred_interactive(st.session_state.df, dimred_method, cluster_method, centroids)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=False)
+        fig.update_layout(width=1000, height=700)
