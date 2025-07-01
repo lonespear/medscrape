@@ -3,7 +3,7 @@ from streamlit_tags import st_tags
 from Bio import Entrez
 
 import pandas as pd
-import numpy as np
+import requests
 
 # Plotly imports for interactive visualization
 import plotly.express as px
@@ -15,18 +15,9 @@ from sklearn.decomposition import PCA, LatentDirichletAllocation
 from sklearn.manifold import TSNE
 from umap import UMAP
 
-from sumy.parsers.plaintext import PlaintextParser
-from sumy.nlp.tokenizers import Tokenizer
-from sumy.summarizers.text_rank import TextRankSummarizer
-
-import nltk
-try:
-    nltk.data.find('tokenizers/punkt')
-except LookupError:
-    nltk.download('punkt')
-
-# Set your email for Entrez
+# Set your email for Entrez and token for huggingface
 Entrez.email = "jonathan.day@westpoint.edu"
+HF_TOKEN = st.secrets["hf_token"]
 
 #############################
 #  PubMed Query Functions   #
@@ -271,11 +262,24 @@ def plot_dimred_interactive(df, dimred_method, cluster_method, centroids=None):
     fig.update_layout(hovermode="closest")
     return fig
 
-def summarize_textrank_sumy(text, num_sentences=3):
-    parser = PlaintextParser.from_string(text, Tokenizer("english"))
-    summarizer = TextRankSummarizer()
-    summary = summarizer(parser.document, num_sentences)
-    return " ".join(str(sentence) for sentence in summary)
+def summarize_huggingface_api(text, num_sentences=3, hf_token=None):
+    """
+    Summarize using Hugging Face Inference API (e.g., `facebook/bart-large-cnn`)
+    """
+    if hf_token is None:
+        hf_token = st.secrets["hf_token"]
+
+    api_url = "https://api-inference.huggingface.co/models/facebook/bart-large-cnn"
+    headers = {"Authorization": f"Bearer {hf_token}"}
+    payload = {"inputs": text, "parameters": {"min_length": 25, "max_length": 100}}
+
+    response = requests.post(api_url, headers=headers, json=payload)
+    if response.status_code != 200:
+        st.error(f"Summarization API failed: {response.text}")
+        return "Summarization failed."
+
+    summary = response.json()[0]["summary_text"]
+    return summary
 
 
 #############################
@@ -504,16 +508,12 @@ sum_bool = st.button("Summarize Clusters", type='primary')
 
 if sum_bool:
     clust_sum = []
-    df_copy = st.session_state.df
-
-    # Loop over all unique clusters
-    for cluster in sorted(df_copy["Cluster"].unique()):
-        cluster_text = " ".join(df_copy[df_copy["Cluster"] == cluster]["Abstract"].dropna())
-        summary = summarize_textrank_sumy(cluster_text, num_sentences=num_sentences)
+    for cluster in sorted(st.session_state.df["Cluster"].unique()):
+        cluster_text = " ".join(st.session_state.df[st.session_state.df["Cluster"] == cluster]["Abstract"].dropna().tolist())
+        cluster_text = cluster_text[:2000]  # Truncate to avoid hitting Hugging Face API limits
+        summary = summarize_huggingface_api(cluster_text, hf_token=st.secrets["hf_token"])
         clust_sum.append((cluster, summary))
 
-    # Display summaries with optional top keywords
     for cluster, summary in clust_sum:
-        top_keywords = ", ".join(cluster_keywords[cluster])
-        with st.expander(f"Cluster {cluster} Summary  🔹 Top Keywords: {top_keywords}"):
-            st.write(summary)
+        st.markdown(f"**Cluster {cluster} Summary**")
+        st.write(summary)
