@@ -15,6 +15,10 @@ from sklearn.decomposition import PCA, LatentDirichletAllocation
 from sklearn.manifold import TSNE
 from umap import UMAP
 
+from sumy.parsers.plaintext import PlaintextParser
+from sumy.nlp.tokenizers import Tokenizer
+from sumy.summarizers.text_rank import TextRankSummarizer
+
 # Set your email for Entrez
 Entrez.email = "jonathan.day@westpoint.edu"
 
@@ -114,7 +118,7 @@ def parse_articles(records, long_study=True, rev_paper=True, sys_rev=True,
     return data
 
 #############################
-#  Clustering Functions     #
+#  Clustering and Summarization Functions     #
 #############################
 
 def run_cluster(df, n_clusters, n_key_words, dimred_method, cluster_method):
@@ -228,6 +232,13 @@ def plot_dimred_interactive(df, dimred_method, cluster_method, centroids=None):
 
     fig.update_layout(hovermode="closest")
     return fig
+
+def summarize_textrank_sumy(text, num_sentences=3):
+    parser = PlaintextParser.from_string(text, Tokenizer("english"))
+    summarizer = TextRankSummarizer()
+    summary = summarizer(parser.document, num_sentences)
+    return " ".join(str(sentence) for sentence in summary)
+
 
 #############################
 #  Main App Interface       #
@@ -400,7 +411,7 @@ with c12:
 with c13:
     n_keywords = st.number_input("Number of Keywords", 1, 20, 10, 1)
 with c19:
-    cluster_btn = st.button("Begin Cluster", type='primary')
+    cluster_btn = st.button("Begin Clustering", type='primary')
 
 if cluster_btn:
     if st.session_state.df is None or st.session_state.df.empty:
@@ -446,3 +457,17 @@ if cluster_btn:
         fig = plot_dimred_interactive(st.session_state.df, dimred_method, cluster_method, centroids)
         st.plotly_chart(fig, use_container_width=False)
         fig.update_layout(width=1000, height=700)
+
+st.divider()
+
+st.subheader("Summarization")
+
+num_sentences = st.slider("Sentences per summary", 1, 5, 3)
+sum_bool = st.button("Summarize Clusters", type='primary')
+
+if sum_bool:
+    clust_sum = []
+    for cluster in num_clusters:
+        df_copy = st.sessions_state.df
+        cluster_text = " ".join(df_copy[df_copy["Cluster"] == 0]["Abstract"].dropna())
+        clust_sum[0] = summarize_textrank_sumy(cluster_text, num_sentences=num_sentences)
