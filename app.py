@@ -288,34 +288,37 @@ if source_option == "Upload CSV":
 
 # Scrape Data Option
 elif source_option == "Scrape from PubMed":
-    example_query = st.radio("See example search query:", options = ["Yes", "No"])
+    example_query = st.radio("See example search query:", options=["Yes", "No"])
     st.subheader("Scraping Tool")
+
     if example_query == "Yes":
         included_1 = st_tags(
             value=adh_terms,
             label="#### Include words or phrases:",
             text="Press enter to add more",
-            key='included1'
+            key='included1_yes'
         )
         included_2 = st_tags(
             value=breast_cancer_terms,
             label="#### Include words or phrases:",
             text="Press enter to add more",
-            key='included2'
+            key='included2_yes'
         )
-    elif example_query == "No":
+    else:
         included_1 = st_tags(
             value=[],
             label="#### Include words or phrases:",
             text="Press enter to add more",
-            key='included1'
+            key='included1_no'
         )
         included_2 = st_tags(
             value=[],
             label="#### Include words or phrases:",
             text="Press enter to add more",
-            key='included2'
+            key='included2_no'
         )
+
+    # Always show this regardless of query example
     excluded = st_tags(
         label="##### Exclude words or phrases:",
         text="Press enter to add more",
