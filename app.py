@@ -269,80 +269,80 @@ st.write("""
          """)
 st.divider()
 
-# CSV Upload Section
-uploaded_file = st.file_uploader("Drag and drop or select a CSV file", type=["csv"])
-if uploaded_file is not None:
-    uploaded_df = pd.read_csv(uploaded_file)
-    st.session_state.df = uploaded_df
-    if 'Abstract' in uploaded_df.columns:
-        st.success("CSV uploaded successfully and 'Abstract' column detected.")
-    else:
-        st.error("The uploaded CSV does not contain an 'Abstract' column. Please upload a valid dataset.")
-
 st.divider()
-st.write('OR')
+source_option = st.radio("Choose data input method", options=["Upload CSV", "Scrape from PubMed"])
 
-# Scraping Tool Section
-st.subheader("Scraping Tool")
-included_1 = st_tags(
-    value=adh_terms,
-    label="#### Include words or phrases:",
-    text="Press enter to add more",
-    key='included1'
-)
-included_2 = st_tags(
-    value=breast_cancer_terms,
-    label="#### Include words or phrases:",
-    text="Press enter to add more",
-    key='included2'
-)
-excluded = st_tags(
-    label="##### Exclude words or phrases:",
-    text="Press enter to add more",
-    maxtags=4,
-    key='excluded'
-)
 
-# Build query string
-query_inc1 = " OR ".join([f'"{term}"' for term in included_1])
-query_inc2 = " OR ".join([f'"{term}"' for term in included_2])
-query_ex = " AND ".join([f'NOT "{term}"' for term in excluded])
-query = f'({query_inc1} AND {query_inc2}) {query_ex}'
+# CSV Upload Section
+if source_option == "Upload CSV":
+    uploaded_file = st.file_uploader("Drag and drop or select a CSV file", type=["csv"])
+    if uploaded_file is not None:
+        uploaded_df = pd.read_csv(uploaded_file)
+        st.session_state.df = uploaded_df
+        if 'Abstract' in uploaded_df.columns:
+            st.success("CSV uploaded successfully and 'Abstract' column detected.")
+        else:
+            st.error("The uploaded CSV does not contain an 'Abstract' column. Please upload a valid dataset.")
 
-st.write('##### Final Query')
-st.write(query)
+# Scrape Data Option
+elif source_option == "Scrape from PubMed":
+    st.subheader("Scraping Tool")
+    included_1 = st_tags(
+        value=adh_terms,
+        label="#### Include words or phrases:",
+        text="Press enter to add more",
+        key='included1'
+    )
+    included_2 = st_tags(
+        value=breast_cancer_terms,
+        label="#### Include words or phrases:",
+        text="Press enter to add more",
+        key='included2'
+    )
+    excluded = st_tags(
+        label="##### Exclude words or phrases:",
+        text="Press enter to add more",
+        maxtags=4,
+        key='excluded'
+    )
 
-# Query Options Section
-c3, c4, c5, c6, _, c9 = st.columns([3, 4, 4, 4, 8, 3])
-with c3:
-    max_results = st.number_input('Maximum Results', min_value=500, max_value=20000, value=2000, step=1)
-with c4:
-    long_study = st.checkbox("Longitudinal Study", value=True, key='long')
-    rev_paper = st.checkbox("Review Paper", value=True, key='rev')
-with c5:
-    sys_rev = st.checkbox("Systematic Review", value=True, key='sys')
-    clin_trial = st.checkbox("Clinical Trial", value=True, key='clin')
-with c6:
-    meta = st.checkbox("Meta Analysis", value=True, key='meta')
-    rct = st.checkbox("RCT", value=True, key='rct')
-with c9:
-    run_query = st.button("Run Search", type='primary')
+    query_inc1 = " OR ".join([f'"{term}"' for term in included_1])
+    query_inc2 = " OR ".join([f'"{term}"' for term in included_2])
+    query_ex = " AND ".join([f'NOT "{term}"' for term in excluded])
+    query = f'({query_inc1} AND {query_inc2}) {query_ex}'
 
-# Run PubMed Search
-if run_query:
-    if not included_1:
-        st.error("Query is empty!")
-    else:
-        placeholder = st.empty()
-        placeholder.write("Searching PubMed...")
-        # Replace with your actual email if needed
-        Entrez.email = "your.email@example.com"
-        records = search_pubmed(query, max_results=max_results)
-        articles = parse_articles(records, long_study=long_study, rev_paper=rev_paper, 
-                                  sys_rev=sys_rev, clinical_trial=clin_trial, 
-                                  meta_analysis=meta, rand_ct=rct)
-        st.session_state.df = pd.DataFrame(articles)
-        placeholder.empty()
+    st.write('##### Final Query')
+    st.write(query)
+
+    # Query options
+    c3, c4, c5, c6, _, c9 = st.columns([3, 4, 4, 4, 8, 3])
+    with c3:
+        max_results = st.number_input('Maximum Results', min_value=500, max_value=20000, value=2000, step=1)
+    with c4:
+        long_study = st.checkbox("Longitudinal Study", value=True, key='long')
+        rev_paper = st.checkbox("Review Paper", value=True, key='rev')
+    with c5:
+        sys_rev = st.checkbox("Systematic Review", value=True, key='sys')
+        clin_trial = st.checkbox("Clinical Trial", value=True, key='clin')
+    with c6:
+        meta = st.checkbox("Meta Analysis", value=True, key='meta')
+        rct = st.checkbox("RCT", value=True, key='rct')
+    with c9:
+        run_query = st.button("Run Search", type='primary')
+
+    if run_query:
+        if not included_1:
+            st.error("Query is empty!")
+        else:
+            placeholder = st.empty()
+            placeholder.write("Searching PubMed...")
+            records = search_pubmed(query, max_results=max_results)
+            articles = parse_articles(records, long_study=long_study, rev_paper=rev_paper, 
+                                      sys_rev=sys_rev, clinical_trial=clin_trial, 
+                                      meta_analysis=meta, rand_ct=rct)
+            st.session_state.df = pd.DataFrame(articles)
+            placeholder.empty()
+
 
 # Display Search Results Section
 if st.session_state.df is not None and not st.session_state.df.empty:
