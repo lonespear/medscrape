@@ -7,3 +7,4 @@ plotly
 scikit-learn
 umap-learn
 sumy
+nltk>=3.6
