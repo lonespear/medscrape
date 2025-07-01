@@ -267,10 +267,12 @@ st.write("""
          articles (parsing details such as abstracts, authors, and publication types) and applies clustering algorithms to 
          group articles by thematic similarities. This structured approach enhances the efficiency and accuracy of literature reviews.**
          """)
-st.divider()
+
 
 st.divider()
-source_option = st.radio("Choose data input method", options=["Upload CSV", "Scrape from PubMed"])
+
+st.subheader("Data Scraping Tool")
+source_option = st.radio("Use criteria below to scrape PubMed for journal articles or upload your own CSV using the format described.", options=["Scrape from PubMed", "Upload CSV"])
 
 
 # CSV Upload Section
