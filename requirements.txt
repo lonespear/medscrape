@@ -6,3 +6,4 @@ numpy
 plotly
 scikit-learn
 umap-learn
+sumy
