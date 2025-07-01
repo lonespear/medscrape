@@ -1,10 +1,9 @@
 streamlit
-streamlit-tags
-biopython
 pandas
 numpy
 plotly
 scikit-learn
+requests
+biopython
+streamlit-tags
 umap-learn
-sumy
-nltk>=3.6
