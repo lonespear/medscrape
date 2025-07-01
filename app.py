@@ -288,19 +288,32 @@ if source_option == "Upload CSV":
 
 # Scrape Data Option
 elif source_option == "Scrape from PubMed":
+    example_query = st.radio("See example search query:", options = ["Yes", "No"])
     st.subheader("Scraping Tool")
-    included_1 = st_tags(
-        value=adh_terms,
-        label="#### Include words or phrases:",
-        text="Press enter to add more",
-        key='included1'
-    )
-    included_2 = st_tags(
-        value=breast_cancer_terms,
-        label="#### Include words or phrases:",
-        text="Press enter to add more",
-        key='included2'
-    )
+    if example_query == "Yes":
+        included_1 = st_tags(
+            value=adh_terms,
+            label="#### Include words or phrases:",
+            text="Press enter to add more",
+            key='included1'
+        )
+        included_2 = st_tags(
+            value=breast_cancer_terms,
+            label="#### Include words or phrases:",
+            text="Press enter to add more",
+            key='included2'
+        )
+    else:
+        included_1 = st_tags(
+            label="#### Include words or phrases:",
+            text="Press enter to add more",
+            key='included1'
+        )
+        included_2 = st_tags(
+            label="#### Include words or phrases:",
+            text="Press enter to add more",
+            key='included2'
+        )
     excluded = st_tags(
         label="##### Exclude words or phrases:",
         text="Press enter to add more",
@@ -319,7 +332,7 @@ elif source_option == "Scrape from PubMed":
     # Query options
     c3, c4, c5, c6, _, c9 = st.columns([3, 4, 4, 4, 8, 3])
     with c3:
-        max_results = st.number_input('Maximum Results', min_value=500, max_value=20000, value=2000, step=1)
+        max_results = st.number_input('Maximum Results', min_value=500, max_value=500000, value=10000, step=100)
     with c4:
         long_study = st.checkbox("Longitudinal Study", value=True, key='long')
         rev_paper = st.checkbox("Review Paper", value=True, key='rev')
