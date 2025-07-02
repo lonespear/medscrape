@@ -227,24 +227,21 @@ def plot_dimred_interactive(df, dimred_method, cluster_method, centroids=None):
     Create an interactive Plotly scatter plot with dimensionality-reduced data and clusters.
     """
     df["Cluster"] = df["Cluster"].astype(str)  # Treat clusters as categories
+    df["hovertext"] = df["Citation"].str.replace(r"\. ", ".<br>", regex=True)
 
     fig = px.scatter(
         df,
         x="Dim_1",
         y="Dim_2",
         color="Cluster",
-        hover_data={
-            "Citation": True,
-            "Dim_1": False,
-            "Dim_2": False,
-            "Cluster": False
-        },
+        hover_name="hovertext",
+        hover_data={"Dim_1": False, "Dim_2": False, "Cluster": False, "hovertext": False},
         title=f"{dimred_method} + {cluster_method} Clustering Visualization",
         labels={"Dim_1": "Dimension 1", "Dim_2": "Dimension 2"},
         color_discrete_sequence=px.colors.qualitative.Set1,
         height=700
     )
-    
+
     if centroids is not None:
         fig.add_trace(
             go.Scatter(
@@ -260,6 +257,7 @@ def plot_dimred_interactive(df, dimred_method, cluster_method, centroids=None):
         )
 
     fig.update_layout(hovermode="closest")
+    fig.update_traces(hoverlabel=dict(bgcolor="white", font_size=12, font_family="Arial"))
     return fig
 
 def summarize_huggingface_api(text, num_sentences=3, hf_token=None):
