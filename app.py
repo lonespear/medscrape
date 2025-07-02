@@ -17,8 +17,6 @@ from sklearn.decomposition import PCA, LatentDirichletAllocation
 from sklearn.manifold import TSNE
 from umap import UMAP
 
-import nltk
-
 # Set your email for Entrez and token for huggingface
 Entrez.email = "jonathan.day@westpoint.edu"
 HF_TOKEN = st.secrets["hf_token"]
@@ -283,36 +281,28 @@ def summarize_huggingface_api(text, num_sentences=3, hf_token=None):
     summary = response.json()[0]["summary_text"]
     return summary
 
+def naive_sent_tokenize(text):
+    sentence_endings = re.compile(r'(?<=[.!?])\s+(?=[A-Z])')
+    sentences = sentence_endings.split(text.strip())
+    return [s for s in sentences if len(s.strip()) > 10]  # Keep only meaningful sentences
+
 def summarize_text_rank(text, num_sentences=3):
     """
-    Lightweight text summarizer using scikit-learn TF-IDF and cosine similarity.
-    Returns the top `num_sentences` ranked by relevance.
+    Lightweight extractive summarizer using TF-IDF and cosine similarity.
     """
-    # Split into sentences
-    from nltk.tokenize import sent_tokenize
-    sentences = sent_tokenize(text)
+    # Use regex tokenizer instead of nltk
+    sentences = naive_sent_tokenize(text)
 
-    # Short circuit
     if len(sentences) <= num_sentences:
         return " ".join(sentences)
 
-    # Clean sentences
-    cleaned = [re.sub(r'\s+', ' ', s.strip()) for s in sentences if len(s.strip()) > 10]
-
-    # Compute TF-IDF matrix
+    cleaned = [re.sub(r'\s+', ' ', s.strip()) for s in sentences]
     tfidf = TfidfVectorizer(stop_words='english')
     tfidf_matrix = tfidf.fit_transform(cleaned)
-
-    # Compute cosine similarity between each sentence
     similarity_matrix = (tfidf_matrix * tfidf_matrix.T).toarray()
-
-    # Sum similarity scores (TextRank approximation)
     scores = similarity_matrix.sum(axis=1)
-
-    # Get top N sentences by score
     ranked_indices = np.argsort(scores)[::-1][:num_sentences]
     ranked_sentences = [cleaned[i] for i in sorted(ranked_indices)]
-
     return " ".join(ranked_sentences)
 
 #############################
@@ -630,7 +620,6 @@ num_sentences = st.slider("Sentences per summary", 1, 5, 3)
 sum_bool = st.button("Summarize Clusters", type='primary')
 
 if sum_bool:
-    nltk.download("punkt")
     # Re-display the clustered table and plot
     if "cluster_df" in st.session_state:
         st.subheader("Cluster Summary")
