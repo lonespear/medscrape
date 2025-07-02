@@ -479,24 +479,26 @@ st.divider()
 st.subheader("Clustering Analysis")
 
 st.markdown("""
-### What is Clustering Analysis?
-
 Clustering groups similar articles together based on abstract content, allowing researchers to explore common themes.  
-Dimensionality reduction projects the high-dimensional article features (e.g., TF-IDF vectors) into a 2D space for visualization.
-
-| Algorithm          | Description |
-|--------------------|-------------|
-| **K-Means**        | Partitions data into a predefined number of clusters by minimizing variance. |
-| **LDA**            | Topic modeling approach that infers latent topics from abstract text. |
-| **DBSCAN**         | Density-based method that finds clusters of high density and identifies noise. |
-| **Hierarchical**   | Builds nested clusters using linkage distances.
-
-| Method             | Purpose |
-|--------------------|---------|
-| **PCA**            | Linear projection to maximize variance. |
-| **t-SNE**          | Preserves local structure (good for small to mid-sized datasets). |
-| **UMAP**           | Balances global and local structure with faster computation and better scalability.
-""")
+Dimensionality reduction projects the high-dimensional article features (e.g., TF-IDF vectors) into a 2D space for visualization.""")
+c20, c21 = st.columns([10,10])
+with c20:
+    st.markdown("""
+    | Algorithm          | Description |
+    |--------------------|-------------|
+    | **K-Means**        | Partitions data into a predefined number of clusters by minimizing variance. |
+    | **LDA**            | Topic modeling approach that infers latent topics from abstract text. |
+    | **DBSCAN**         | Density-based method that finds clusters of high density and identifies noise. |
+    | **Hierarchical**   | Builds nested clusters using linkage distances.
+    """)
+with c21:
+    st.markdown("""
+    | Method             | Purpose |
+    |--------------------|---------|
+    | **PCA**            | Linear projection to maximize variance. |
+    | **t-SNE**          | Preserves local structure (good for small to mid-sized datasets). |
+    | **UMAP**           | Balances global and local structure with faster computation and better scalability.
+    """)
 
 c10, c11, c12, c13, _, c19 = st.columns([5, 5, 4, 4, 8, 3])
 with c10:
