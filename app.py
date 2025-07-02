@@ -321,13 +321,18 @@ st.set_page_config(layout="wide")
 
 # App Title and Description
 st.title("Systematic Review Tool for PubMed")
-st.write("""
-         **This tool aids medical researchers in conducting comprehensive literature reviews by performing broad queries on 
-         PubMed to capture a vast array of articles. Utilizing NLP techniques, it systematically analyzes the retrieved 
-         articles (parsing details such as abstracts, authors, and publication types) and applies clustering algorithms to 
-         group articles by thematic similarities. This structured approach enhances the efficiency and accuracy of literature reviews.**
-         """)
 
+st.markdown("""
+### About This App
+
+This tool facilitates comprehensive literature reviews using PubMed data. It allows users to:
+- Query a large volume of biomedical articles using customizable keyword filters.
+- Automatically parse abstracts and metadata.
+- Apply clustering and dimensionality reduction to explore thematic groupings.
+- Summarize each cluster's content using natural language models.
+
+The aim is to support researchers in identifying relevant trends, topics, and insights across vast bodies of academic literature.
+""")
 
 st.divider()
 
@@ -350,6 +355,20 @@ if source_option == "Upload CSV":
 elif source_option == "Scrape from PubMed":
 
     st.subheader("Scraping Tool")
+
+    st.markdown("""
+    ### Constructing a PubMed Search
+
+    You may enter keywords and phrases in the boxes below:
+    - **Include (Group 1 and 2):** Articles must contain terms from both groups.
+    - **Exclude:** Filters out any article containing these terms.
+
+    The resulting Boolean query is automatically constructed as:  
+    `(Group 1 term OR ...) AND (Group 2 term OR ...) AND NOT (Excluded terms)`
+
+    You can choose to include only specific types of studies (e.g., clinical trials, meta-analyses, longitudinal studies) to focus your search.
+    """)
+
     example_query = st.radio("See example search query:", options=["Yes", "No"])
     
     if example_query == "Yes":
@@ -442,6 +461,27 @@ st.divider()
 
 # Clustering Analysis Section
 st.subheader("Clustering Analysis")
+
+st.markdown("""
+### What is Clustering Analysis?
+
+Clustering groups similar articles together based on abstract content, allowing researchers to explore common themes.  
+Dimensionality reduction projects the high-dimensional article features (e.g., TF-IDF vectors) into a 2D space for visualization.
+
+| Algorithm          | Description |
+|--------------------|-------------|
+| **K-Means**        | Partitions data into a predefined number of clusters by minimizing variance. |
+| **LDA**            | Topic modeling approach that infers latent topics from abstract text. |
+| **DBSCAN**         | Density-based method that finds clusters of high density and identifies noise. |
+| **Hierarchical**   | Builds nested clusters using linkage distances.
+
+| Method             | Purpose |
+|--------------------|---------|
+| **PCA**            | Linear projection to maximize variance. |
+| **t-SNE**          | Preserves local structure (good for small to mid-sized datasets). |
+| **UMAP**           | Balances global and local structure with faster computation and better scalability.
+""")
+
 c10, c11, c12, c13, _, c19 = st.columns([5, 5, 4, 4, 8, 3])
 with c10:
     cluster_method = st.selectbox('Select Clustering Algorithm', 
@@ -457,6 +497,10 @@ with c19:
     cluster_btn = st.button("Begin Clustering", type='primary')
 
 if cluster_btn:
+    st.session_state.pop("cluster_df", None)
+    st.session_state.pop("cluster_plot", None)
+    st.session_state.pop("clustered_data", None)
+    
     if st.session_state.df is None or st.session_state.df.empty:
         st.error("No data to cluster!")
     else:
@@ -489,6 +533,17 @@ if cluster_btn:
 
         # Display the merged table
         st.write("### Cluster Summary")
+
+        st.markdown("""
+        ### Interpreting the Cluster Summary Table
+
+        Each cluster is labeled and sorted by the number of articles it contains.  
+        For each cluster, the most distinctive keywords are extracted using TF-IDF or topic model weights.
+
+        - These keywords do not overlap across clusters to ensure clarity.
+        - Keywords help characterize the central theme of each group.
+        """)
+
         st.dataframe(cluster_df, use_container_width=True)
         st.divider()
         # Display the interactive Plotly chart
@@ -501,13 +556,40 @@ if cluster_btn:
         st.plotly_chart(fig, use_container_width=False)
         fig.update_layout(width=1000, height=700)
 
+        st.session_state.cluster_df = cluster_df
+        st.session_state.cluster_plot = fig
+        st.session_state.clustered_data = st.session_state.df.copy()
+
 st.divider()
 st.subheader("Summarization")
+
+st.markdown("""
+### Cluster Summarization
+
+Using the Hugging Face `facebook/bart-large-cnn` model, each cluster of abstracts is summarized into a few sentences that describe the dominant theme.
+
+- This step provides a quick synopsis of each topic area.
+- Summaries are generated from all abstracts in a cluster, truncated to fit API limits.
+
+⚠️ **Note:** This step uses remote inference and may incur latency for large clusters.
+""")
 
 num_sentences = st.slider("Sentences per summary", 1, 5, 3)
 sum_bool = st.button("Summarize Clusters", type='primary')
 
 if sum_bool:
+    # Re-display the clustered table and plot
+    if "cluster_df" in st.session_state:
+        st.subheader("Cluster Summary")
+        st.dataframe(st.session_state.cluster_df, use_container_width=True)
+
+    if "cluster_plot" in st.session_state:
+        st.plotly_chart(st.session_state.cluster_plot, use_container_width=False)
+
+    if "clustered_data" in st.session_state:
+        st.write("### Clustered Data Table")
+        st.dataframe(st.session_state.clustered_data, use_container_width=True)
+
     clust_sum = []
     for cluster in sorted(st.session_state.df["Cluster"].unique()):
         cluster_text = " ".join(st.session_state.df[st.session_state.df["Cluster"] == cluster]["Abstract"].dropna().tolist())
