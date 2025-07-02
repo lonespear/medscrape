@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="medscrape.png" alt="medscrape logo" width="300"/>
+  <img src="medscrape.png" alt="medscrape logo" width="600"/>
 </p>
 
 **medscrape** is a lightweight Streamlit-based tool for clustering, summarizing, and visualizing PubMed journal abstracts. Researchers can upload their own datasets or scrape PubMed directly to explore emerging themes and trends in biomedical literature using unsupervised machine learning and natural language processing.
