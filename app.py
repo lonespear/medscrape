@@ -484,7 +484,7 @@ Dimensionality reduction projects the high-dimensional article features (e.g., T
 c20, c21 = st.columns([10,10])
 with c20:
     st.markdown("""
-    | Algorithm          | Description |
+    | Clustering Algorithm          | Description |
     |--------------------|-------------|
     | **K-Means**        | Partitions data into a predefined number of clusters by minimizing variance. |
     | **LDA**            | Topic modeling approach that infers latent topics from abstract text. |
@@ -493,7 +493,7 @@ with c20:
     """)
 with c21:
     st.markdown("""
-    | Method             | Purpose |
+    | Dimensionality Reduction Method             | Purpose |
     |--------------------|---------|
     | **PCA**            | Linear projection to maximize variance. |
     | **t-SNE**          | Preserves local structure (good for small to mid-sized datasets). |
