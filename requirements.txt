@@ -7,4 +7,3 @@ requests
 biopython
 streamlit-tags
 umap-learn
-nltk
