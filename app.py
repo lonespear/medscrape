@@ -372,8 +372,6 @@ if source_option == "Upload CSV":
 # Scrape Data Option
 elif source_option == "Scrape from PubMed":
 
-    st.subheader("Scraping Tool")
-
     st.markdown("""
     ### Constructing a PubMed Search
 
