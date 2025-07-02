@@ -4,6 +4,8 @@ from Bio import Entrez
 
 import pandas as pd
 import requests
+import numpy as np
+import re
 
 # Plotly imports for interactive visualization
 import plotly.express as px
@@ -15,9 +17,9 @@ from sklearn.decomposition import PCA, LatentDirichletAllocation
 from sklearn.manifold import TSNE
 from umap import UMAP
 
-from sumy.parsers.plaintext import PlaintextParser
-from sumy.nlp.tokenizers import Tokenizer
-from sumy.summarizers.text_rank import TextRankSummarizer
+import nltk
+
+nltk.download("punkt")
 
 # Set your email for Entrez and token for huggingface
 Entrez.email = "jonathan.day@westpoint.edu"
@@ -283,19 +285,37 @@ def summarize_huggingface_api(text, num_sentences=3, hf_token=None):
     summary = response.json()[0]["summary_text"]
     return summary
 
-def summarize_text_rank(text, num_sentences=3):
+def summarize_text_rank_sklearn(text, num_sentences=3):
     """
-    Local summarization using the TextRank algorithm via Sumy.
+    Lightweight text summarizer using scikit-learn TF-IDF and cosine similarity.
+    Returns the top `num_sentences` ranked by relevance.
     """
-    if not text.strip():
-        return "No abstract text available for summarization."
-    
-    parser = PlaintextParser.from_string(text, Tokenizer("english"))
-    summarizer = TextRankSummarizer()
-    summary_sentences = summarizer(parser.document, num_sentences)
-    summary = " ".join(str(sentence) for sentence in summary_sentences)
-    
-    return summary or "Summarization could not be generated."
+    # Split into sentences
+    from nltk.tokenize import sent_tokenize
+    sentences = sent_tokenize(text)
+
+    # Short circuit
+    if len(sentences) <= num_sentences:
+        return " ".join(sentences)
+
+    # Clean sentences
+    cleaned = [re.sub(r'\s+', ' ', s.strip()) for s in sentences if len(s.strip()) > 10]
+
+    # Compute TF-IDF matrix
+    tfidf = TfidfVectorizer(stop_words='english')
+    tfidf_matrix = tfidf.fit_transform(cleaned)
+
+    # Compute cosine similarity between each sentence
+    similarity_matrix = (tfidf_matrix * tfidf_matrix.T).toarray()
+
+    # Sum similarity scores (TextRank approximation)
+    scores = similarity_matrix.sum(axis=1)
+
+    # Get top N sentences by score
+    ranked_indices = np.argsort(scores)[::-1][:num_sentences]
+    ranked_sentences = [cleaned[i] for i in sorted(ranked_indices)]
+
+    return " ".join(ranked_sentences)
 
 #############################
 #  Main App Interface       #
