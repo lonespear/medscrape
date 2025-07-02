@@ -19,8 +19,6 @@ from umap import UMAP
 
 import nltk
 
-nltk.download("punkt")
-
 # Set your email for Entrez and token for huggingface
 Entrez.email = "jonathan.day@westpoint.edu"
 HF_TOKEN = st.secrets["hf_token"]
@@ -632,6 +630,7 @@ num_sentences = st.slider("Sentences per summary", 1, 5, 3)
 sum_bool = st.button("Summarize Clusters", type='primary')
 
 if sum_bool:
+    nltk.download("punkt")
     # Re-display the clustered table and plot
     if "cluster_df" in st.session_state:
         st.subheader("Cluster Summary")
