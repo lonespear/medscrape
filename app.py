@@ -342,6 +342,24 @@ source_option = st.radio("Use criteria below to scrape PubMed for journal articl
 
 # CSV Upload Section
 if source_option == "Upload CSV":
+    st.markdown("""
+        **📄 Required CSV Columns:**
+
+        To ensure full functionality, your uploaded CSV must include at least the following columns:
+
+        - `Title`: The title of the article.
+        - `Abstract`: The abstract of the article.
+        - `Authors`: The list of authors.
+        - `PublicationYear`: Year the article was published.
+        - `JournalName`: Name of the journal.
+        - `PubMedURL`: URL to the article on PubMed (optional but recommended).
+
+        **Example:**
+
+        | Title | Abstract | Authors | PublicationYear | JournalName | PubMedURL |
+        |-------|----------|---------|------------------|--------------|-----------|
+        | The Role of ADH in Breast Cancer | This study explores... | Smith J, Lee A | 2022 | JAMA Oncology | https://... |
+        """)
     uploaded_file = st.file_uploader("Drag and drop or select a CSV file", type=["csv"])
     if uploaded_file is not None:
         uploaded_df = pd.read_csv(uploaded_file)
