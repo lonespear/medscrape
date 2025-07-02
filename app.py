@@ -15,6 +15,10 @@ from sklearn.decomposition import PCA, LatentDirichletAllocation
 from sklearn.manifold import TSNE
 from umap import UMAP
 
+from sumy.parsers.plaintext import PlaintextParser
+from sumy.nlp.tokenizers import Tokenizer
+from sumy.summarizers.text_rank import TextRankSummarizer
+
 # Set your email for Entrez and token for huggingface
 Entrez.email = "jonathan.day@westpoint.edu"
 HF_TOKEN = st.secrets["hf_token"]
@@ -279,6 +283,19 @@ def summarize_huggingface_api(text, num_sentences=3, hf_token=None):
     summary = response.json()[0]["summary_text"]
     return summary
 
+def summarize_text_rank(text, num_sentences=3):
+    """
+    Local summarization using the TextRank algorithm via Sumy.
+    """
+    if not text.strip():
+        return "No abstract text available for summarization."
+    
+    parser = PlaintextParser.from_string(text, Tokenizer("english"))
+    summarizer = TextRankSummarizer()
+    summary_sentences = summarizer(parser.document, num_sentences)
+    summary = " ".join(str(sentence) for sentence in summary_sentences)
+    
+    return summary or "Summarization could not be generated."
 
 #############################
 #  Main App Interface       #
@@ -582,12 +599,13 @@ st.subheader("Summarization")
 st.markdown("""
 ### Cluster Summarization
 
-Using the Hugging Face `facebook/bart-large-cnn` model, each cluster of abstracts is summarized into a few sentences that describe the dominant theme.
+Each cluster of abstracts is summarized into a few sentences using the **TextRank** algorithm (via the `sumy` library), a fast and lightweight graph-based method for extractive summarization.
 
+- No API token or external service is required — all computation runs locally.
 - This step provides a quick synopsis of each topic area.
-- Summaries are generated from all abstracts in a cluster, truncated to fit API limits.
+- Summaries are generated from all abstracts in a cluster and highlight the most central sentences.
 
-⚠️ **Note:** This step uses remote inference and may incur latency for large clusters.
+📎 **Note:** TextRank works best when abstracts are well-formed and non-fragmented.
 """)
 
 num_sentences = st.slider("Sentences per summary", 1, 5, 3)
@@ -609,8 +627,9 @@ if sum_bool:
     clust_sum = []
     for cluster in sorted(st.session_state.df["Cluster"].unique()):
         cluster_text = " ".join(st.session_state.df[st.session_state.df["Cluster"] == cluster]["Abstract"].dropna().tolist())
-        cluster_text = cluster_text[:2000]  # Truncate to avoid hitting Hugging Face API limits
-        summary = summarize_huggingface_api(cluster_text, hf_token=st.secrets["hf_token"])
+        # cluster_text = cluster_text[:2000]  # Truncate to avoid hitting Hugging Face API limits
+        # summary = summarize_huggingface_api(cluster_text, hf_token=st.secrets["hf_token"])
+        summary = summarize_text_rank(cluster_text, num_sentences=num_sentences)
         clust_sum.append((cluster, summary))
 
     for cluster, summary in clust_sum:
