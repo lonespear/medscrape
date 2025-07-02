@@ -285,7 +285,7 @@ def summarize_huggingface_api(text, num_sentences=3, hf_token=None):
     summary = response.json()[0]["summary_text"]
     return summary
 
-def summarize_text_rank_sklearn(text, num_sentences=3):
+def summarize_text_rank(text, num_sentences=3):
     """
     Lightweight text summarizer using scikit-learn TF-IDF and cosine similarity.
     Returns the top `num_sentences` ranked by relevance.
