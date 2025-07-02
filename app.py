@@ -348,9 +348,10 @@ if source_option == "Upload CSV":
 
 # Scrape Data Option
 elif source_option == "Scrape from PubMed":
-    example_query = st.radio("See example search query:", options=["Yes", "No"])
-    st.subheader("Scraping Tool")
 
+    st.subheader("Scraping Tool")
+    example_query = st.radio("See example search query:", options=["Yes", "No"])
+    
     if example_query == "Yes":
         included_1 = st_tags(
             value=adh_terms,
