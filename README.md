@@ -35,12 +35,6 @@
 
 ---
 
-## 🖼️ Demo
-
-![demo](https://user-images.githubusercontent.com/.../example.png) <!-- optional: insert GIF or screenshot of interface -->
-
----
-
 ## 📂 Required File Format for Upload
 
 If uploading a CSV, your file must include the following columns:
