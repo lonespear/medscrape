@@ -481,7 +481,7 @@ st.subheader("Clustering Analysis")
 st.markdown("""
 Clustering groups similar articles together based on abstract content, allowing researchers to explore common themes.  
 Dimensionality reduction projects the high-dimensional article features (e.g., TF-IDF vectors) into a 2D space for visualization.""")
-c20, c21 = st.columns([10,10])
+c20, c21 = st.columns([5,5])
 with c20:
     st.markdown("""
     | Clustering Algorithm          | Description |
